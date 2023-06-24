@@ -1,0 +1,16 @@
+{
+  "name": "Export-variables-to-CSS",
+  "version": "1.0.0",
+  "description": "自分のFigmaプラグイン",
+  "main": "code.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "npm run build -- --watch"
+  },
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "@figma/plugin-typings": "^1.68.0",
+    "typescript": "^5.1.3"
+  }
+}

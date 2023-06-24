@@ -1,0 +1,58 @@
+<h2 style="font-size: 14px">Export variables to css</h2>
+
+<div style="display: flex; gap: 8px">
+  <button id="create">Create CSS</button>
+  <button id="copy" disabled>Copy</button>
+  <button id="export" disabled>Export</button>
+  <button id="cancel">Cancel</button>
+</div>
+
+<div style="margin-top: 12px">
+  <textarea id="css" rows="7" style="width: 100%"></textarea>
+</div>
+
+<script>
+  const textarea = document.getElementById("css");
+  const createButton = document.getElementById("create");
+  const copyButton = document.getElementById("copy");
+  const exportButton = document.getElementById("export");
+  const cancelButton = document.getElementById("cancel");
+
+  createButton.onclick = () => {
+    parent.postMessage({ pluginMessage: { type: "create-css" } }, "*");
+  };
+
+  copyButton.onclick = () => {
+    textarea.select();
+    document.execCommand("copy");
+  };
+
+  exportButton.onclick = () => {
+    var element = document.createElement("a");
+    element.setAttribute(
+      "href",
+      "data:text/css;charset=utf-8," + encodeURIComponent(textarea.value)
+    );
+    element.setAttribute("download", "variables.css");
+    element.style.display = "none";
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
+  cancelButton.onclick = () => {
+    parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
+  };
+
+  onmessage = (event) => {
+    switch (event.data.pluginMessage.type) {
+      case "generated":
+        textarea.value = event.data.pluginMessage.css;
+        copyButton.disabled = false;
+        exportButton.disabled = false;
+        break;
+      default:
+        break;
+    }
+  };
+</script>
