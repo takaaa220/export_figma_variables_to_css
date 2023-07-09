@@ -1,15 +1,55 @@
-<h2 style="font-size: 14px">Export variables to css</h2>
+<section>
+  <h3 style="font-size: 14px">Create Variables</h3>
 
-<div style="display: flex; gap: 8px">
-  <button id="create">Create CSS</button>
-  <button id="copy" disabled>Copy</button>
-  <button id="export" disabled>Export</button>
-  <button id="cancel">Cancel</button>
-</div>
+  <div>
+    <p style="font-size: 12px; margin: 8px 0">
+      Select variables you want to export:
+    </p>
+    <div style="display: flex; gap: 4px; flex-wrap: wrap">
+      <label style="font-size: 12px">
+        <input type="checkbox" id="color" checked />
+        Color
+      </label>
+      <label style="font-size: 12px">
+        <input type="checkbox" id="shadow" checked />
+        Shadow
+      </label>
+      <label style="font-size: 12px">
+        <input type="checkbox" id="blur" checked />
+        Blur
+      </label>
+      <label style="font-size: 12px">
+        <input type="checkbox" id="font-size" checked />
+        Font Size
+      </label>
+      <label style="font-size: 12px">
+        <input type="checkbox" id="font-weight" checked />
+        Font Weight
+      </label>
+      <label style="font-size: 12px">
+        <input type="checkbox" id="font-family" checked />
+        Font Family
+      </label>
+      <label style="font-size: 12px">
+        <input type="checkbox" id="local-variables" checked />
+        Local Variables
+      </label>
+    </div>
 
-<div style="margin-top: 12px">
-  <textarea id="css" rows="7" style="width: 100%"></textarea>
-</div>
+    <div style="display: flex; gap: 8px; margin-top: 12px">
+      <button id="create">Create</button>
+      <button id="copy" disabled>Copy</button>
+      <button id="export" disabled>Export</button>
+      <button id="cancel">Cancel</button>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h3 style="font-size: 14px">Preview</h3>
+
+  <textarea id="css" rows="10" style="width: 100%"></textarea>
+</section>
 
 <script>
   const textarea = document.getElementById("css");
@@ -17,9 +57,17 @@
   const copyButton = document.getElementById("copy");
   const exportButton = document.getElementById("export");
   const cancelButton = document.getElementById("cancel");
+  const checkboxes = document.querySelectorAll("input[type='checkbox']");
 
   createButton.onclick = () => {
-    parent.postMessage({ pluginMessage: { type: "create-css" } }, "*");
+    const exportedVariables = [...checkboxes]
+      .filter((checkbox) => checkbox.checked)
+      .map((checkbox) => checkbox.id);
+
+    parent.postMessage(
+      { pluginMessage: { type: "create-css", exportedVariables } },
+      "*"
+    );
   };
 
   copyButton.onclick = () => {

@@ -1,5 +1,8 @@
 // This shows the HTML page in "ui.html".
-figma.showUI(__html__);
+figma.showUI(__html__, {
+  height: 400,
+  width: 500,
+});
 
 type CssVariable = {
   name: string;
@@ -15,7 +18,7 @@ type CssVariables = {
 figma.ui.onmessage = (msg) => {
   switch (msg.type) {
     case "create-css": {
-      const cssVariables = getCssVariables();
+      const cssVariables = getCssVariables(msg.exportedVariables);
       const css = createCss(cssVariables);
       figma.ui.postMessage({ type: "generated", css });
       break;
@@ -27,44 +30,72 @@ figma.ui.onmessage = (msg) => {
   }
 };
 
-function getCssVariables(): CssVariables[] {
+function getCssVariables(exportedVariables: string[]): CssVariables[] {
   return [
-    {
-      type: "COLOR",
-      prefix: "color",
-      variables: getColors(),
-    },
-    {
-      type: "SHADOW",
-      prefix: "shadow",
-      variables: getShadows(),
-    },
-    {
-      type: "BLUR",
-      prefix: "blur",
-      variables: getBlurs(),
-    },
-    {
-      type: "FONT SIZE",
-      prefix: "font-size",
-      variables: getFontSizes(),
-    },
-    {
-      type: "FONT WEIGHT",
-      prefix: "font-weight",
-      variables: getFontWeights(),
-    },
-    {
-      type: "FONT FAMILY",
-      prefix: "font-family",
-      variables: getFontFamilies(),
-    },
-    {
-      type: "LOCAL VARIABLES",
-      // TODO: should consider prefix for local variables
-      prefix: "",
-      variables: getLocalVariables(),
-    },
+    ...(exportedVariables.includes("color")
+      ? [
+          {
+            type: "COLOR",
+            prefix: "color",
+            variables: getColors(),
+          },
+        ]
+      : []),
+    ...(exportedVariables.includes("shadow")
+      ? [
+          {
+            type: "SHADOW",
+            prefix: "shadow",
+            variables: getShadows(),
+          },
+        ]
+      : []),
+    ...(exportedVariables.includes("blur")
+      ? [
+          {
+            type: "BLUR",
+            prefix: "blur",
+            variables: getBlurs(),
+          },
+        ]
+      : []),
+    ...(exportedVariables.includes("font-size")
+      ? [
+          {
+            type: "FONT SIZE",
+            prefix: "font-size",
+            variables: getFontSizes(),
+          },
+        ]
+      : []),
+    ...(exportedVariables.includes("font-weight")
+      ? [
+          {
+            type: "FONT WEIGHT",
+            prefix: "font-weight",
+            variables: getFontWeights(),
+          },
+        ]
+      : []),
+    ...(exportedVariables.includes("font-family")
+      ? [
+          {
+            type: "FONT FAMILY",
+            prefix: "font-family",
+            variables: getFontFamilies(),
+          },
+        ]
+      : []),
+    ...(exportedVariables.includes("local-variables")
+      ? [
+          {
+            type: "LOCAL VARIABLES",
+            // TODO: should consider prefix for local variables
+            prefix: "",
+            variables: getLocalVariables(),
+          },
+        ]
+      : []),
   ];
 }
 

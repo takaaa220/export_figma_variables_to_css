@@ -1,6 +1,8 @@
 # Export Figma Variables to CSS
 
-This is a simple script that exports Figma variables to CSS.
+This is a simple Figma plugin that exports Figma variables to CSS.
+
+<img src="./plugin-screenshot.png" height="300" />
 
 ## Supported Variables
 
