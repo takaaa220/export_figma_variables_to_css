@@ -7,7 +7,8 @@ type CssVariable = {
 };
 
 type CssVariables = {
-  prefix: string;
+  type: string;
+  prefix?: string;
   variables: CssVariable[];
 };
 
@@ -29,28 +30,40 @@ figma.ui.onmessage = (msg) => {
 function getCssVariables(): CssVariables[] {
   return [
     {
+      type: "COLOR",
       prefix: "color",
       variables: getColors(),
     },
     {
+      type: "SHADOW",
       prefix: "shadow",
       variables: getShadows(),
     },
     {
+      type: "BLUR",
       prefix: "blur",
       variables: getBlurs(),
     },
     {
+      type: "FONT SIZE",
       prefix: "font-size",
       variables: getFontSizes(),
     },
     {
+      type: "FONT WEIGHT",
       prefix: "font-weight",
       variables: getFontWeights(),
     },
     {
+      type: "FONT FAMILY",
       prefix: "font-family",
       variables: getFontFamilies(),
+    },
+    {
+      type: "LOCAL VARIABLES",
+      // TODO: should consider prefix for local variables
+      prefix: "",
+      variables: getLocalVariables(),
     },
   ];
 }
@@ -64,7 +77,7 @@ function getColors(): CssVariable[] {
   return paintStyles.map((paintStyle) => {
     const paint = paintStyle.paints[0] as SolidPaint;
 
-    const hex = convertToColorCode(paint.color, paint.opacity);
+    const hex = convertToColorCode({ ...paint.color, a: paint.opacity });
     return { name: paintStyle.name, value: hex };
   });
 }
@@ -121,7 +134,7 @@ function getShadows(): CssVariable[] {
         name: effectStyle.name,
         value: `${effect.offset.x}px ${effect.offset.y}px ${
           effect.radius
-        }px ${convertToColorCode(effect.color, undefined)}`,
+        }px ${convertToColorCode(effect.color)}`,
       };
     });
 }
@@ -148,18 +161,105 @@ function getBlurs(): CssVariable[] {
     });
 }
 
+function getLocalVariables(): CssVariable[] {
+  function extractValueFromValues(
+    valuesByMode: Variable["valuesByMode"],
+    variableName: string
+  ): VariableValue {
+    const values = Object.values(valuesByMode);
+    if (values.length !== 1) {
+      throw new Error(
+        `Variable (${variableName}) has multiple values or no values`
+      );
+    }
+
+    return values[0];
+  }
+
+  return figma.variables
+    .getLocalVariables()
+    .map((variable) => {
+      const variableValue = extractValueFromValues(
+        variable.valuesByMode,
+        variable.name
+      );
+
+      switch (variable.resolvedType) {
+        case "COLOR": {
+          if (!isRGB(variableValue))
+            throw new Error(`Variable (${variable.name}) value is not a color`);
+
+          return {
+            name: variable.name,
+            value: convertToColorCode(variableValue),
+          };
+        }
+        case "STRING": {
+          if (typeof variableValue !== "string")
+            throw new Error(
+              `Variable (${variable.name}) value is not a string`
+            );
+
+          return { name: variable.name, value: variableValue };
+        }
+        case "FLOAT": {
+          if (typeof variableValue !== "number")
+            throw new Error(
+              `Variable (${variable.name}) value is not a number`
+            );
+
+          return { name: variable.name, value: variableValue.toString() };
+        }
+        case "BOOLEAN": {
+          // TODO: not supported yet
+          console.warn("Boolean variable is not supported yet");
+          return undefined;
+        }
+        default:
+          const _: never = variable.resolvedType;
+          return undefined;
+      }
+    })
+    .filter(isNotUndefined);
+}
+
 function createCss(cssVariables: CssVariables[]): string {
   return cssVariables
-    .map(({ prefix, variables }) => {
+    .map(({ prefix, type, variables }) => {
       const css = variables
         .map((variable) => {
           return convertToCssVariables(variable, prefix);
         })
         .join("\n");
 
-      return `/* --- ${prefix} --- */\n${css}`;
+      return `/* --- ${type} --- */\n${css}`;
     })
     .join("\n\n");
+}
+
+function isNotUndefined<T>(value: T | undefined): value is T {
+  return value !== undefined;
+}
+
+function isRGB(color: VariableValue): color is RGB {
+  return (
+    typeof color === "object" &&
+    color !== null &&
+    "r" in color &&
+    "g" in color &&
+    "b" in color
+  );
+}
+
+function isRGBA(color: VariableValue): color is RGBA {
+  return (
+    typeof color === "object" &&
+    color !== null &&
+    "r" in color &&
+    "g" in color &&
+    "b" in color &&
+    "a" in color
+  );
 }
 
 const convertToHex = (value: number) => {
@@ -167,24 +267,22 @@ const convertToHex = (value: number) => {
   return hex.length === 1 ? `0${hex}` : hex;
 };
 
-const beautifyColor = (color: RGB) => {
+const beautifyColor = (color: RGB | RGBA) => {
   return {
     r: convertToHex(color.r),
     g: convertToHex(color.g),
     b: convertToHex(color.b),
+    a: isRGBA(color) ? convertToHex(color.a) : undefined,
   };
 };
 
-const beautifyOpacity = (opacity: number | undefined) => {
-  return opacity ? opacity * 100 : 100;
-};
-
-const convertToColorCode = (color: RGB, opacity: number | undefined) => {
+const convertToColorCode = (color: RGB | RGBA) => {
   const beautifiedColor = beautifyColor(color);
-  const beautifiedOpacity = beautifyOpacity(opacity);
 
   return `#${beautifiedColor.r}${beautifiedColor.g}${beautifiedColor.b}${
-    beautifiedOpacity === 100 ? "" : beautifiedOpacity
+    beautifiedColor.a !== undefined && beautifiedColor.a !== "ff"
+      ? beautifiedColor.a
+      : ""
   }`;
 };
 
@@ -192,8 +290,11 @@ const normalizeCssVariableName = (name: string) => {
   return name.replace(/[\s//]/g, "-").toLowerCase();
 };
 
-const convertToCssVariables = (variable: CssVariable, prefix: string) => {
-  return `--${prefix}-${normalizeCssVariableName(variable.name)}: ${
-    variable.value
-  };`;
+const convertToCssVariables = (
+  variable: CssVariable,
+  prefix: string | undefined
+) => {
+  return `--${prefix ? `${prefix}-` : ""}${normalizeCssVariableName(
+    variable.name
+  )}: ${variable.value};`;
 };

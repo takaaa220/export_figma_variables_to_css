@@ -1,7 +1,7 @@
 {
   "name": "Export-variables-to-CSS",
   "version": "1.0.0",
-  "description": "自分のFigmaプラグイン",
+  "description": "Export variables to css on figma plugin",
   "main": "code.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
