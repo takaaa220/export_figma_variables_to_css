@@ -1,5 +1,5 @@
 {
-  "name": "Export-variables-to-CSS",
+  "name": "export-figma-variables-to-css",
   "version": "1.0.0",
   "description": "Export variables to css on figma plugin",
   "main": "code.js",
